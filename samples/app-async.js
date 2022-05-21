@@ -16,14 +16,10 @@ booco.login().then(async () => {
 
   const feedbacks = await booco.equipment.getFeedback('Relay');
   console.log(feedbacks);
-  const device = await booco.equipment.getDevice('Relay');
-  console.log(await device.getFeedback('relay1'));
-  await device.setChannel('toggleRelay1');
-  console.log(await device.getFeedback('relay1'));
+  await booco.equipment.setChannel('Relay', 'toggleRelay1');
 
   booco.on('connect', () => {
-    device.subscribe();
-    booco.equipment.subscribe(['Projector 1', 'Projector 2']);
+    booco.equipment.subscribe(['Relay', 'Projector 1', 'Projector 2']);
     booco.equipment.subscribe('Player 1');
   });
 
@@ -31,10 +27,18 @@ booco.login().then(async () => {
 });
 
 booco.equipment.on('Relay.relay5', (value, oldValue) => {
-  console.log(value, oldValue);
+  console.log(`Relay.relay5: ${oldValue} => ${value}`);
 });
 
 booco.equipment.on('Player 1', (value) => {
+  console.log(value);
+});
+
+booco.equipment.on('Projector 1', (value) => {
+  console.log(value);
+});
+
+booco.equipment.on('Projector 2', (value) => {
   console.log(value);
 });
 
