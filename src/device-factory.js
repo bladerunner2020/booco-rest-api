@@ -1,7 +1,10 @@
+const EventEmitter = require('events');
 const Device = require('./device');
 
-class DeviceFactory {
+class DeviceFactory extends EventEmitter {
   constructor({ api }) {
+    super();
+
     this.api = api;
   }
 
@@ -70,6 +73,7 @@ class DeviceFactory {
 
       api.once('error', onError);
       api.once('connect', onConnect);
+      api.socketConnect();
     });
   }
 }

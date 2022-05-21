@@ -40,13 +40,9 @@ class BoocoRestApi extends EventEmitter {
   }
 
   connect() {
-    return this.loginRestApi();
-    // .then(() => {
-    //   this.socketConnect();
-    // })
-    // .catch((err) => {
-    //   this.emit('error', new Error(`Failed to login: ${err.message}`));
-    // });
+    return this.loginRestApi().then(() => {
+      this.emit('connect');
+    });
   }
 
   destroy() {
@@ -159,17 +155,30 @@ class BoocoRestApi extends EventEmitter {
     });
 
     this.socket.on('data', (data) => {
-      try {
-        const res = JSON.parse(data);
-        if (res.socketId) {
-          this.socketId = res.socketId;
-          this.emit('connect');
-        } else if (res.pong) {
-          this.pongReceived = true;
+      const processText = (text) => {
+        try {
+          const res = JSON.parse(text);
+          if (res.socketId) {
+            this.socketId = res.socketId;
+            this.emit('connect');
+          } else if (res.pong) {
+            this.pongReceived = true;
+          } else if (res.resource === 'eqstates') {
+            const { name, _id, ...feedbacks } = res.document || {};
+            const { name: oldName, _id: oldId, ...oldFeedbacks } = res.oldDocument || {};
+            if (name) {
+              this.equipment.emit(name, feedbacks, oldFeedbacks);
+              Object.keys(feedbacks).forEach((f) => {
+                this.equipment.emit(`${name}.${f}`, feedbacks[f], oldFeedbacks[f]);
+              });
+            }
+          }
+        } catch (err) {
+          debug(`Data error: ${err} (${text})`);
+          //
         }
-      } catch (err) {
-        //
-      }
+      };
+      data.toString().split('\n').forEach((text) => processText(text));
     });
 
     this.socket.connect({ port, host }, () => {

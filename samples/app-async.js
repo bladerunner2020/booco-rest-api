@@ -8,9 +8,7 @@ const booco = new BoocoRestApi({
   password: 'admin'
 });
 booco.on('error', (err) => console.error(err.message));
-booco.connect();
-
-booco.on('connect', async () => {
+booco.connect().then(async () => {
   // booco.log.debug('Connected');
   console.log('Connected');
 
@@ -20,6 +18,12 @@ booco.on('connect', async () => {
   console.log(await device.getFeedback('relay1'));
   await device.setChannel('toggleRelay1');
   console.log(await device.getFeedback('relay1'));
+
+  await booco.equipment.subscribe(['Relay']);
+});
+
+booco.equipment.on('Relay.relay5', (value, oldValue) => {
+  console.log(value, oldValue);
 });
 
 // setTimeout(() => booco.destroy(), 10000);
