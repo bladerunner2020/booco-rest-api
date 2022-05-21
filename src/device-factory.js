@@ -44,36 +44,15 @@ class DeviceFactory extends EventEmitter {
     const url = 'eqstates/subscribe';
     const devices = Array.isArray(nameOrNames) ? nameOrNames : [nameOrNames];
 
-    if (socketId) {
-      const data = {
-        socketId,
-        devices
-      };
-      return api.callRestApi({ url, method: 'POST', data }).then(({ status, message }) => {
-        if (status === 'success') return Promise.resolve();
-        throw new Error(`Failed with status = ${status}, message = ${message}`);
-      });
-    }
+    if (!socketId) return Promise.reject(new Error('Cannot subscribe - socket not connected.'));
 
-    return new Promise((resolve, reject) => {
-      const onError = (err) => {
-        // eslint-disable-next-line no-use-before-define
-        api.removeListener('connect', onConnect);
-        reject(err);
-      };
-      const onConnect = () => {
-        this.subscribe(nameOrNames)
-          .then(resolve)
-          .catch(reject)
-          .finally(() => {
-            api.removeListener('connect', onConnect);
-            api.removeListener('error', onError);
-          });
-      };
-
-      api.once('error', onError);
-      api.once('connect', onConnect);
-      api.socketConnect();
+    const data = {
+      socketId,
+      query: { name: { $in: devices } }
+    };
+    return api.callRestApi({ url, method: 'POST', data }).then(({ status, message }) => {
+      if (status === 'success') return Promise.resolve();
+      throw new Error(`Failed with status = ${status}, message = ${message}`);
     });
   }
 }

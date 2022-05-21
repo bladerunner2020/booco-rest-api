@@ -24,6 +24,11 @@ class Device {
       throw new Error(`Failed with status = ${status}, message = ${message}`);
     });
   }
+
+  subscribe() {
+    const { api, name } = this;
+    return api.equipment.subscribe([name]);
+  }
 }
 
 module.exports = Device;

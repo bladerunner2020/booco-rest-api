@@ -39,9 +39,91 @@ class BoocoRestApi extends EventEmitter {
     this.log = new Logger({ api: this });
   }
 
+  login() {
+    const {
+      username, password
+    } = this;
+
+    const data = {
+      username,
+      password
+    };
+
+    this.authToken = null;
+    this.authUserId = null;
+
+    return this.callRestApi({
+      method: 'POST',
+      url: 'login',
+      data
+    }).then(({ status, data: resData = {}, message }) => {
+      if (status === 'success') {
+        const { authToken, userId } = resData;
+        this.authToken = authToken;
+        this.authUserId = userId;
+        this.emit('login');
+      } else {
+        throw new Error(`Request failed with status = ${status}, message = ${message}`);
+      }
+    });
+  }
+
   connect() {
-    return this.loginRestApi().then(() => {
-      this.emit('connect');
+    const { host, socketPort: port } = this;
+
+    this.socket = new Socket();
+    this.socket.on('error', (err = {}) => {
+      this.emit('error', new Error(`Socket connection error:${err.message}`));
+      this.socketConnected = false;
+    });
+
+    this.socket.on('close', () => {
+      this.socketId = null;
+      this.socketConnected = false;
+
+      if (this.pingTimer) {
+        // stop sending pings to socket
+        clearTimeout(this.pingTimer);
+        this.pingTimer = null;
+      }
+
+      this.reconnectionTimer = setTimeout(() => {
+        this.reconnectionTimer = null;
+        this.connect();
+      }, RECONNECTION_TIMEOUT);
+    });
+
+    this.socket.on('data', (data) => {
+      const processText = (text) => {
+        try {
+          const res = JSON.parse(text);
+          if (res.socketId) {
+            this.socketId = res.socketId;
+            this.emit('connect');
+          } else if (res.pong) {
+            this.pongReceived = true;
+          } else if (res.resource === 'eqstates') {
+            const { name, _id, ...feedbacks } = res.document || {};
+            const { name: oldName, _id: oldId, ...oldFeedbacks } = res.oldDocument || {};
+            if (name) {
+              this.equipment.emit(name, feedbacks, oldFeedbacks);
+              Object.keys(feedbacks).forEach((f) => {
+                this.equipment.emit(`${name}.${f}`, feedbacks[f], oldFeedbacks[f]);
+              });
+            }
+          }
+        } catch (err) {
+          debug(`Data error: ${err} (${text})`);
+          //
+        }
+      };
+      data.toString().split('\n').forEach((text) => processText(text));
+    });
+
+    this.socket.connect({ port, host }, () => {
+      debug(this, `Socket connected: ${host}:${port}`);
+      this.socketConnected = true;
+      this.ping(true); // to keep server subscribed
     });
   }
 
@@ -129,65 +211,6 @@ class BoocoRestApi extends EventEmitter {
     });
   }
 
-  socketConnect() {
-    const { host, socketPort: port } = this;
-
-    this.socket = new Socket();
-    this.socket.on('error', (err = {}) => {
-      this.emit('error', new Error(`Socket connection error:${err.message}`));
-      this.socketConnected = false;
-    });
-
-    this.socket.on('close', () => {
-      this.socketId = null;
-      this.socketConnected = false;
-
-      if (this.pingTimer) {
-        // stop sending pings to socket
-        clearTimeout(this.pingTimer);
-        this.pingTimer = null;
-      }
-
-      this.reconnectionTimer = setTimeout(() => {
-        this.reconnectionTimer = null;
-        this.socketConnect();
-      }, RECONNECTION_TIMEOUT);
-    });
-
-    this.socket.on('data', (data) => {
-      const processText = (text) => {
-        try {
-          const res = JSON.parse(text);
-          if (res.socketId) {
-            this.socketId = res.socketId;
-            this.emit('connect');
-          } else if (res.pong) {
-            this.pongReceived = true;
-          } else if (res.resource === 'eqstates') {
-            const { name, _id, ...feedbacks } = res.document || {};
-            const { name: oldName, _id: oldId, ...oldFeedbacks } = res.oldDocument || {};
-            if (name) {
-              this.equipment.emit(name, feedbacks, oldFeedbacks);
-              Object.keys(feedbacks).forEach((f) => {
-                this.equipment.emit(`${name}.${f}`, feedbacks[f], oldFeedbacks[f]);
-              });
-            }
-          }
-        } catch (err) {
-          debug(`Data error: ${err} (${text})`);
-          //
-        }
-      };
-      data.toString().split('\n').forEach((text) => processText(text));
-    });
-
-    this.socket.connect({ port, host }, () => {
-      debug(this, `Socket connected: ${host}:${port}`);
-      this.socketConnected = true;
-      this.ping(true); // to keep server subscribed
-    });
-  }
-
   ping(first) {
     this.socket.write('ping');
     this.pongReceived = !!first;
@@ -201,37 +224,9 @@ class BoocoRestApi extends EventEmitter {
           this.socket.destroy();
           this.socket = null;
         }
-        this.socketConnect();
+        this.connect();
       }
     }, PING_TIMEOUT);
-  }
-
-  loginRestApi() {
-    const {
-      username, password
-    } = this;
-
-    const data = {
-      username,
-      password
-    };
-
-    this.authToken = null;
-    this.authUserId = null;
-
-    return this.callRestApi({
-      method: 'POST',
-      url: 'login',
-      data
-    }).then(({ status, data: resData = {}, message }) => {
-      if (status === 'success') {
-        const { authToken, userId } = resData;
-        this.authToken = authToken;
-        this.authUserId = userId;
-      } else {
-        throw new Error(`Request failed with status = ${status}, message = ${message}`);
-      }
-    });
   }
 }
 
