@@ -172,7 +172,7 @@ class BoocoRestApi extends EventEmitter {
     const options = {
       hostname,
       port,
-      path: `${apiBaseUrl}${url}`,
+      path: `${apiBaseUrl}${encodeURI(url)}`,
       method,
       headers
     };
