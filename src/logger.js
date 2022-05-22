@@ -7,7 +7,7 @@ class Logger {
     this.api = api;
   }
 
-  log(message) {
+  info(message) {
     this.api.callRestApi({
       url: `log/info/${message}`
     }).catch(onError);
