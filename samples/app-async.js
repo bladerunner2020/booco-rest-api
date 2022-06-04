@@ -11,12 +11,12 @@ const booco = new BoocoRestApi({
 booco.on('error', (err) => console.error(err.message));
 
 booco.login().then(async () => {
-  // booco.log.debug('Connected');
+  booco.log.info('Connected from script - привет!');
   console.log('REST API logged on');
 
   const feedbacks = await booco.equipment.getFeedback('Relay');
   console.log(feedbacks);
-  await booco.equipment.setChannel('Relay', 'toggleRelay1');
+  await booco.equipment.setChannel('Relay', 'toggleRelay5'); // called before subscription!
   booco.connect();
 });
 
