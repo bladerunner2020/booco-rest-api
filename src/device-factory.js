@@ -28,10 +28,38 @@ class DeviceFactory extends EventEmitter {
     });
   }
 
+  setFeedback(name, feedback, value) {
+    const { api } = this;
+    const url = `equipment/setFeedback/${name}/${feedback}/${value}`;
+
+    return api.callRestApi({ url }).then(({ status, data, message }) => {
+      if (status === 'success') return data;
+      throw new Error(`Failed with status = ${status}, message = ${message}`);
+    });
+  }
+
   subscribe(nameOrNames) {
     const { api } = this;
     const { socketId } = api;
     const url = 'eqstates/subscribe';
+    const devices = Array.isArray(nameOrNames) ? nameOrNames : [nameOrNames];
+
+    if (!socketId) return Promise.reject(new Error('Cannot subscribe - socket not connected.'));
+
+    const data = {
+      socketId,
+      query: { name: { $in: devices } }
+    };
+    return api.callRestApi({ url, method: 'POST', data }).then(({ status, message }) => {
+      if (status === 'success') return Promise.resolve();
+      throw new Error(`Failed with status = ${status}, message = ${message}`);
+    });
+  }
+
+  subscribeChannels(nameOrNames) {
+    const { api } = this;
+    const { socketId } = api;
+    const url = 'channels/subscribe';
     const devices = Array.isArray(nameOrNames) ? nameOrNames : [nameOrNames];
 
     if (!socketId) return Promise.reject(new Error('Cannot subscribe - socket not connected.'));

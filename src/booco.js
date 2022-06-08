@@ -123,6 +123,16 @@ class BoocoRestApi extends EventEmitter {
                 this.equipment.emit(`${name}.${f}`, feedbacks[f], oldFeedbacks[f]);
               });
             }
+          } else if (res.resource === 'channels') {
+            const {
+              name, _id, channel, value
+            } = res.document || {};
+            if (name && channel) {
+              this.equipment.emit(`channel:${name}`, {
+                channel, value, name, _id
+              });
+              this.equipment.emit(`channel:${name}:${channel}`, value);
+            }
           }
         } catch (err) {
           this.debug(`Data error: ${err} (${text})`);
