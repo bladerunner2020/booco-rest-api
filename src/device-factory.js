@@ -59,7 +59,7 @@ class DeviceFactory extends EventEmitter {
   subscribeChannels(nameOrNames) {
     const { api } = this;
     const { socketId } = api;
-    const url = 'channels/subscribe';
+    const url = 'equipment/channels/subscribe';
     const devices = Array.isArray(nameOrNames) ? nameOrNames : [nameOrNames];
 
     if (!socketId) return Promise.reject(new Error('Cannot subscribe - socket not connected.'));
