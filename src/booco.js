@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const EventEmitter = require('events');
 const { Socket } = require('net');
 const DeviceFactory = require('./device-factory');
@@ -10,7 +11,8 @@ const PING_TIMEOUT = 10000;
 class BoocoRestApi extends EventEmitter {
   constructor({
     host = '127.0.0.1',
-    port = 80,
+    secure = false,
+    port = secure ? 443 : 80,
     socketPort = 5990,
     apiBaseUrl = '/api/v1/',
     username = 'admin',
@@ -18,12 +20,13 @@ class BoocoRestApi extends EventEmitter {
   }) {
     super();
 
-    this.hostname = host;
+    this.host = host;
     this.port = port;
     this.socketPort = socketPort;
     this.username = username;
     this.password = password;
     this.apiBaseUrl = apiBaseUrl;
+    this.secure = secure;
 
     this.socket = null;
     this.socketId = null; // Will be assigned by server!
@@ -182,7 +185,7 @@ class BoocoRestApi extends EventEmitter {
     dataType = 'json'
   }, callback) {
     const {
-      hostname, port, apiBaseUrl, authToken, authUserId
+      host, port, apiBaseUrl, authToken, authUserId, secure
     } = this;
 
     const postData = typeof data === 'object' ? JSON.stringify(data) : data;
@@ -194,16 +197,18 @@ class BoocoRestApi extends EventEmitter {
     if (typeof authUserId !== 'undefined') headers['X-User-Id'] = authUserId;
 
     const options = {
-      hostname,
+      host,
       port,
       path: `${apiBaseUrl}${encodeURI(url)}`,
       method,
       headers
     };
 
+    const request = secure ? https.request : http.request;
+
     return new Promise((resolve, reject) => {
       this.debug(`Request: ${options.path}`);
-      const req = http.request(options, (res) => {
+      const req = request(options, (res) => {
         this.debug(`STATUS: ${res.statusCode}`);
 
         let resData = '';
