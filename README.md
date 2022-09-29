@@ -67,12 +67,13 @@ BOOCO REST API
 
 При инициализации экземпляра объекта класса можно указать следующие параметры:
 
--   **host** — адрес хоста сервера BOOCO (по умолчанию: *'127.0.0.1'*);
--   **port** — порт для отправки запросов (по умолчанию: *80*);
--   **socketPort** — порт для подписки tcp socket (по умолчанию: *5990*);
--   **apiBaseUrl** — базовый URL для REST API (по умолчанию: *'/api/v1/'*);
--   **username** — имя пользователя REST API (значение по умолчанию: *'admin'*);
--   **password** — пароль пользователя REST API (значение по умолчанию: *'admin'*).
+- **host** — адрес хоста сервера BOOCO (по умолчанию: *'127.0.0.1'*);
+- **port** — порт для отправки запросов (по умолчанию: *80*, если используется _http_ и 443, если _https_);
+- **socketPort** — порт для подписки tcp socket (по умолчанию: *5990*);
+- **apiBaseUrl** — базовый URL для REST API (по умолчанию: *'/api/v1/'*);
+- **username** — имя пользователя REST API (значение по умолчанию: *'admin'*);
+- **password** — пароль пользователя REST API (значение по умолчанию: *'admin'*)
+- **secure** - если true, то используется протокол _https_, иначе (по умолчанию) - _http_.
 
 **Примечание**. *Все указанные параметры являются необязательными.*
 
@@ -84,12 +85,13 @@ BOOCO REST API
   const { BoocoRestApi } = require('..');
 
   const booco = new BoocoRestApi({
-    host = '127.0.0.1',
+    host: '127.0.0.1',
     port: 3000,
-    socketPort = 5990,
-    apiBaseUrl = '/api/v1/',
-    username = 'admin',
-    password = 'admin',
+    socketPort: 5990,
+    apiBaseUrl: '/api/v1/',
+    username: 'admin',
+    password: 'admin',
+    secure: false
 });
 ```
 
